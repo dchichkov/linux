@@ -34,12 +34,12 @@ Requirements: linux kernel > linux-3.10-rc6. Architecture: x64.
 4. Install and boot compiled kernel.
 
 5. As root:
+     echo "Make sure the IRQ balancer is off"
+     /etc/init.d/irq_balancer stop
+
      echo "Disable realtime bandwidth reservation"
      echo -1 > /proc/sys/kernel/sched_rt_runtime_us
 
-     echo "Reduce vmstat polling to one time per 24h"
-     echo 20 > /proc/sys/vm/stat_interval
-     
      echo "Change CPU frequency governor to performance"
      echo performance > /sys/devices/system/cpu/cpu3/cpufreq/scaling_governor
 

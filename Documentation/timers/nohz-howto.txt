@@ -10,15 +10,15 @@ For full instruction please refer to timers/NO_HZ.txt and kernel-per-CPU-kthread
 Requirements: linux kernel > linux-3.10-rc6. Architecture: x64.
 
 
-1. Start with the default configuration.
-    make defconfig
+1. Start with the default configuration:
+     make defconfig
 
 2. Select the following options:
      General setup > Timers subsystem > Timer tick handling (Full dynticks system (tickless))
-     General setup > Timers subsystem > Full dynticks system on all CPUs by default
+                                      > Full dynticks system on all CPUs by default
      General setup > RCU Subsystem > Accelerate last non-dyntick-idle CPU's grace periods
-     General setup > RCU Subsystem > Offload RCU callback processing from boot-selected CPUs
-     General setup > RCU Subsystem > Build-forced no-CBs CPUs (All CPUs are build_forced no-CBs CPUs)
+                                   > Offload RCU callback processing from boot-selected CPUs
+                                   > Build-forced no-CBs CPUs (All CPUs are build_forced no-CBs CPUs)
      
    This will result in:
      CONFIG_NO_HZ_FULL=y, CONFIG_NO_HZ_FULL_ALL=y, CONFIG_VIRT_CPU_ACCOUNTING=y, CONFIG_VIRT_CPU_ACCOUNTING_GEN=y
@@ -28,12 +28,12 @@ Requirements: linux kernel > linux-3.10-rc6. Architecture: x64.
    And build the kernel, for example on Ubuntu/Debian: 
      fakeroot make-kpkg --append-to-version=.nohzfull -j8 --initrd kernel_image kernel_headers
          
-4. Isolate a cpu core (CPU 3 for example) by adding isolcpus option to linux command line
-     For example on Ubuntu/Debian add "isolcpus=3" to GRUB_CMDLINE_LINUX_DEFAULT in the /etc/default/grub
+3. Isolate a cpu core (CPU 3 for example) by adding isolcpus option to linux command line, i.e. on Ubuntu/Debian:
+     add "isolcpus=3" to GRUB_CMDLINE_LINUX_DEFAULT in the /etc/default/grub
 
-5. Install and boot compiled kernel
+4. Install and boot compiled kernel.
 
-6. As root:
+5. As root:
      echo "Disable realtime bandwidth reservation"
      echo -1 > /proc/sys/kernel/sched_rt_runtime_us
 
@@ -43,7 +43,7 @@ Requirements: linux kernel > linux-3.10-rc6. Architecture: x64.
      echo "Change CPU frequency governor to performance"
      echo performance > /sys/devices/system/cpu/cpu3/cpufreq/scaling_governor
 
-7. Start tracing tick_stop events on CPU 3
+6. Start tracing tick_stop events on CPU 3:
      for i in `find /sys/kernel/debug/tracing/events -name "enable" | grep tick_stop`; do echo 1 > $i; done
      cat /sys/kernel/debug/tracing/trace_pipe | grep '\[003\]'    
 

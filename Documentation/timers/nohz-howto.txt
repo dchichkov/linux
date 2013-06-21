@@ -1,0 +1,55 @@
+nohz-howto - Information on reproducing working NO_HZ_FULL config
+-----------------------------------------------------------------
+
+This document gives a *minimalistic* set of steps that one need to 
+perform in order to activate tickless operation for a user space
+process. 
+
+For full instruction please refer to timers/NO_HZ.txt and kernel-per-CPU-kthreads.txt.
+
+Requirements: linux kernel > linux-3.10-rc6. Architecture: x64.
+
+
+1. Start with the default configuration.
+    make defconfig
+
+2. Select the following options:
+     General setup > Timers subsystem > Timer tick handling (Full dynticks system (tickless))
+     General setup > Timers subsystem > Full dynticks system on all CPUs by default
+     General setup > RCU Subsystem > Accelerate last non-dyntick-idle CPU's grace periods
+     General setup > RCU Subsystem > Offload RCU callback processing from boot-selected CPUs
+     General setup > RCU Subsystem > Build-forced no-CBs CPUs (All CPUs are build_forced no-CBs CPUs)
+     
+   This will result in:
+     CONFIG_NO_HZ_FULL=y, CONFIG_NO_HZ_FULL_ALL=y
+     CONFIG_VIRT_CPU_ACCOUNTING=y, CONFIG_VIRT_CPU_ACCOUNTING_GEN=y
+     CONFIG_CONTEXT_TRACKING=y, CONFIG_RCU_USER_QS=y, CONFIG_CONTEXT_TRACKING_FORCE=y
+     CONFIG_RCU_FAST_NO_HZ=y, CONFIG_RCU_NOCB_CPU=y, CONFIG_RCU_NOCB_CPU_ALL=y
+
+3. Make the kernel
+     For example on Ubuntu/Debian: 
+         fakeroot make-kpkg --append-to-version=.nohzfull -j8 --initrd kernel_image kernel_headers
+         
+4. Isolate a cpu core (CPU 3 for example) by adding isolcpus option to linux command line
+     For example on Ubuntu/Debian add "isolcpus=3" to GRUB_CMDLINE_LINUX_DEFAULT in the /etc/default/grub
+
+5. Install and boot compiled kernel
+
+6. As root:
+     echo "Disable realtime bandwidth reservation"
+     echo -1 > /proc/sys/kernel/sched_rt_runtime_us
+
+     echo "Reduce vmstat polling to one time per 24h"
+     echo 86400 > /proc/sys/vm/stat_interval
+     
+     echo "Change CPU frequency governor to performance"
+     echo performance > /sys/devices/system/cpu/cpu3/cpufreq/scaling_governor
+
+7. Start tracing tick_stop events on CPU 3
+     for i in `find /sys/kernel/debug/tracing/events -name "enable" | grep tick_stop`; do echo 1 > $i; done
+     cat /sys/kernel/debug/tracing/trace_pipe | grep '\[003\]'    
+
+8. Run the following test code using CPU 3:
+     taskset -c 3 bash -c "while true; do true; done"
+
+9. Observe trace events and confirm that CPU 3 enters into tickless mode.
